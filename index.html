@@ -12,7 +12,7 @@
 :root {
   --orange: #ff4500; --o2: rgba(255, 69, 0, 0.45); --o3: rgba(255, 69, 0, 0.08);
   --green: #00ffa3;  --g2: rgba(0, 255, 163, 0.4);  --g3: rgba(0, 255, 163, 0.08);
-  --blue: #00cfff;   --b2: rgba(0, 207, 255, 0.4);  --b3: rgba(0, 207, 255, 0.08);
+  --blue: #00cfff;   --b2: rgba(0, 207, 255, 0.4);   --b3: rgba(0, 207, 255, 0.08);
   --bg: #03050d; --bg2: #070b19; --bg3: #0c1326;
   --border: rgba(255, 255, 255, 0.06);
   --text: #eef2ff; --muted: #64748b;
@@ -445,518 +445,208 @@ a, button, select, input, textarea { cursor: none; }
   </div>
 </div>
 
-<footer class="footer">⚡ BONBON <span>HUB</span> — POWERED BY FIREBASE CLOUD — UPDATED CONTINUOUSLY</footer>
+<footer class="footer">
+  <p>&copy; 2026 BONBON HUB. Power up your game experience. Developed with <span>❤️</span></p>
+</footer>
 
 <script>
-/* ═══════════════════════════════════════════
-   VFX LIVE MOTION ENGINE & INTERACTIVE CLICK
-═══════════════════════════════════════════ */
-(function(){
-  const canvas=document.getElementById('vfx-canvas');
-  const ctx=canvas.getContext('2d');
-  let W, H, particles=[], mouseX=0, mouseY=0;
-  function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
-  resize(); window.addEventListener('resize',resize);
-  
-  const COLORS=['rgba(255,69,0,','rgba(0,255,163,','rgba(0,207,255,'];
-  class Particle{
-    constructor(){this.reset(true);}
-    reset(init){
-      this.x=Math.random()*W;
-      this.y=init?Math.random()*H:H+10;
-      this.vx=(Math.random()-.5)*0.5;
-      this.vy=-(Math.random()*0.5+0.2);
-      this.r=Math.random()*1.8+0.4;
-      this.alpha=Math.random()*0.6+0.1;
-      this.color=COLORS[Math.floor(Math.random()*COLORS.length)];
-      this.life=1; this.decay=Math.random()*0.0025+0.0008;
-    }
-    update(){
-      this.x+=this.vx; this.y+=this.vy;
-      this.life-=this.decay;
-      if(this.y<-5||this.life<=0)this.reset(false);
-    }
-    draw(){
-      ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-      ctx.fillStyle=this.color+this.alpha+')'; ctx.fill();
-    }
-  }
-  for(let i=0;i<125;i++)particles.push(new Particle());
-  
-  function drawConnections(){
-    for(let i=0;i<particles.length;i++){
-      for(let j=i+1;j<particles.length;j++){
-        const dx=particles[i].x-particles[j].x;
-        const dy=particles[i].y-particles[j].y;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<95){
-          const a=(1-d/95)*0.07;
-          ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y);
-          ctx.strokeStyle='rgba(255,255,255,'+a+')'; ctx.lineWidth=0.45; ctx.stroke();
-        }
-      }
-    }
-  }
-  
-  window.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY;});
-  window.addEventListener('click',()=>{
-    for(let i=0;i<15;i++){
-      const p=new Particle(); p.x=mouseX; p.y=mouseY;
-      const angle=Math.random()*Math.PI*2; const speed=Math.random()*2.5+1.2;
-      p.vx=Math.cos(angle)*speed; p.vy=Math.sin(angle)*speed;
-      p.r=Math.random()*2.8+0.8; p.alpha=1; particles.push(p);
-    }
-    if(particles.length>220)particles.splice(0,15);
-  });
-  
-  function raf(){ ctx.clearRect(0,0,W,H); drawConnections(); particles.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(raf); }
-  raf();
-})();
-
-/* ═══════════════════════════════════════════
-   DYNAMIC INTEGRATED CURSOR SYSTEM
-═══════════════════════════════════════════ */
-(function(){
-  const dot=document.getElementById('cursor'), ring=document.getElementById('cursor-ring');
-  let mx=0, my=0, rx=0, ry=0;
-  document.addEventListener('mousemove',e=>{mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px';});
-  function animRing(){ rx+=(mx-rx)*0.14; ry+=(my-ry)*0.14; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(animRing); } animRing();
-  document.addEventListener('mousedown',()=>{dot.classList.add('click');ring.classList.add('click');});
-  document.addEventListener('mouseup',()=>{dot.classList.remove('click');ring.classList.remove('click');});
-  
-  function applySelectors(){
-    document.querySelectorAll('a,button,select,input,textarea,.lang-btn,.tab-btn,.copy-btn,.dl-btn,.hot-btn,.nbtn,.fsb').forEach(el=>{
-      el.addEventListener('mouseenter',()=>{dot.style.width='14px';dot.style.height='14px';ring.style.width='52px';ring.style.height='52px';dot.style.background='var(--accent)';});
-      el.addEventListener('mouseleave',()=>{dot.style.width='8px';dot.style.height='8px';ring.style.width='40px';ring.style.height='40px';});
-    });
-  }
-  window.refreshCursorSelectors = applySelectors;
-  applySelectors();
-})();
-
-/* ═══════════════════════════════════════════
-   FIREBASE CLOUD DATABASE OPERATIONS
-═══════════════════════════════════════════ */
-const FB_ROBLOX = "https://bonbonhub-default-rtdb.asia-southeast1.firebasedatabase.app/scripts.json";
-const FB_MCSCRIPT = "https://bonbonhub-default-rtdb.asia-southeast1.firebasedatabase.app/mc_scripts.json";
-const FB_MCAPP = "https://bonbonhub-default-rtdb.asia-southeast1.firebasedatabase.app/mc_apps.json";
-
-let robloxData=[], mcScriptData=[], mcAppData=[];
-let currentLang='en';
-let isAdmin=false;
-let hotR=false, hotMC=false;
-let translatedRoblox=[], translatedMC=[], translatedApp=[];
-
-async function fbGet(url){
-  const r=await fetch(url); const d=await r.json();
-  if(!d)return [];
-  return Object.keys(d).map(k=>({cloudId:k,...d[k]}));
-}
-async function fbPost(url,obj){
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
-  return r.ok;
-}
-async function fbDelete(url){ const r=await fetch(url,{method:'DELETE'}); return r.ok; }
-
-async function loadAll(){
-  try{
-    [robloxData,mcScriptData,mcAppData]=await Promise.all([fbGet(FB_ROBLOX),fbGet(FB_MCSCRIPT),fbGet(FB_MCAPP)]);
-  }catch(e){robloxData=[];mcScriptData=[];mcAppData=[];}
-  
-  await translateAll(currentLang);
-  updateStats();
-}
-
-/* ═══════════════════════════════════════════
-   GLOBAL LANGUAGE CONFIGURATION MAP (54 LANGS)
-═══════════════════════════════════════════ */
-const ALL_LANGUAGES = [
-  // CHÂU Á
-  {code:'vi', name:'🇻🇳 Tiếng Việt'}, {code:'en', name:'🇺🇸 English'}, {code:'zh-CN', name:'🇨🇳 简体中文'},
-  {code:'zh-TW', name:'🇨🇳 繁體中文'}, {code:'ja', name:'🇯🇵 日本語'}, {code:'ko', name:'🇰🇷 한국어'},
-  {code:'id', name:'🇮🇩 Bahasa Indonesia'}, {code:'th', name:'🇹🇭 ภาษาไทย'}, {code:'ms', name:'🇲🇾 Bahasa Melayu'},
-  {code:'tl', name:'🇵🇭 Tagalog (Philippines)'}, {code:'km', name:'🇰🇭 ភាសាខ្មែរ'}, {code:'lo', name:'🇱🇦 ພາສາລາວ'},
-  {code:'my', name:'🇲🇲 ဗမာစာ (Burmese)'}, {code:'hi', name:'🇮🇳 हिन्दी (Hindi)'}, {code:'bn', name:'🇧🇩 বাংলা (Bengali)'},
-  {code:'ur', name:'🇵🇰 اردو (Urdu)'}, {code:'ar', name:'🇸🇦 العربية (Arabic)'}, {code:'he', name:'🇮🇱 עברית (Hebrew)'},
-  {code:'tr', name:'🇹🇷 Türkçe'}, {code:'fa', name:'🇮🇷 فارسی (Persian)'},
-  // CHÂU ÂU
-  {code:'fr', name:'🇫🇷 Français'}, {code:'de', name:'🇩🇪 Deutsch'}, {code:'es', name:'🇪🇸 Español'},
-  {code:'it', name:'🇮🇹 Italiano'}, {code:'ru', name:'🇷🇺 Русский'}, {code:'uk', name:'🇺🇦 Українська'},
-  {code:'pt', name:'🇵🇹 Português'}, {code:'nl', name:'🇳🇱 Nederlands'}, {code:'pl', name:'🇵🇱 Polski'},
-  {code:'sv', name:'🇸🇪 Svenska'}, {code:'no', name:'🇳🇴 Norsk'}, {code:'da', name:'🇩🇰 Dansk'},
-  {code:'fi', name:'🇫🇮 Suomi'}, {code:'cs', name:'🇨🇿 Čeština'}, {code:'sk', name:'🇸🇰 Slovenčina'},
-  {code:'hu', name:'🇭🇺 Magyar'}, {code:'ro', name:'🇷🇴 Română'}, {code:'el', name:'🇬🇷 Ελληνικά'},
-  {code:'bg', name:'🇧🇬 Български'}, {code:'hr', name:'🇭🇷 Hrvatski'}, {code:'sr', name:'🇷🇸 Српски'},
-  {code:'lt', name:'🇱🇹 Lietuvių'}, {code:'lv', name:'🇱🇻 Latviešu'}, {code:'et', name:'🇪🇪 Eesti'},
-  {code:'is', name:'🇮🇸 Íslenska'}, {code:'ga', name:'🇮🇪 Gaeilge'},
-  // CHÂU MỸ & KHÁC
-  {code:'en', name:'🇨🇦 English (Canada)'}, {code:'es', name:'🇲🇽 Español (Latinoamérica)'}, 
-  {code:'pt-BR', name:'🇧🇷 Português (Brasil)'}, {code:'sw', name:'🇰🇪 Kiswahili'},
-  {code:'am', name:'🇪🇹 አማርኛ (Amharic)'}, {code:'zu', name:'🇿🇦 isiZulu'}, 
-  {code:'af', name:'🇿🇦 Afrikaans'}, {code:'eo', name:'🌐 Esperanto'}
+// DỮ LIỆU SCRIPT / APP MẪU (Thay đổi nội dung thực tế tại đây)
+const mockRoblox = [
+  { title: "Blox Fruits Auto Farm", desc: "Script tự động gom quái, farm cấp độ và tự động nhặt rương siêu mượt.", code: "loadstring(game:HttpGet('https://raw.githubusercontent.com/BonBonHub/BloxFruit/main/Script.lua'))()", hot: true },
+  { title: "King Legacy Auto Quest", desc: "Hỗ trợ tự nhận nhiệm vụ, gom quái nhanh và tránh bị văng game trên điện thoại.", code: "loadstring(game:HttpGet('https://raw.githubusercontent.com/BonBonHub/KingLegacy/main/Quest.lua'))()", hot: false }
 ];
 
-async function gtranslate(text,target){
-  if(!text||!text.trim()||!isNaN(text))return text;
-  try{
-    const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
-    const r=await fetch(url); const d=await r.json();
-    return d[0].map(s=>s[0]).join('');
-  }catch(e){return text;}
-}
+const mockMinecraft = [
+  { title: "Meteor Client Addon (Java)", desc: "Hỗ trợ di chuyển nhanh trên không (Fly) và gia tốc tốc độ di chuyển cực mượt.", code: ".speed 2.5", hot: true },
+  { title: "Bedrock Utility Script", desc: "Tối ưu hóa tầm nhìn ban đêm (NightVision) và tự động đào khối đá.", code: "/scripteffect nightvision true", hot: false }
+];
 
-async function translateStaticUI(targetLang) {
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: function(node) {
-        if (node.parentElement.tagName === 'SCRIPT' || node.parentElement.tagName === 'STYLE' || node.parentElement.id === 'pCode' || node.parentElement.classList.contains('lang-btn')) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        return node.textContent.trim().length > 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-      }
-    }
-  );
+const mockApps = [
+  { title: "Toolbox for MCPE", desc: "Ứng dụng mod menu đa năng chuyên dụng hỗ trợ phiên bản Android.", version: "v5.4.20", link: "https://google.com" },
+  { title: "PojavLauncher Modpack", desc: "Gói tối ưu hóa tăng FPS đáng kể khi chơi Minecraft Java trên di động.", version: "v2.1-Stable", link: "#" }
+];
 
-  let node;
-  const nodesToTranslate = [];
-  while (node = walker.nextNode()) {
-    nodesToTranslate.push(node);
-  }
+// Khởi chạy khi trang web sẵn sàng
+window.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+  initCursor();
+});
 
-  await Promise.all(nodesToTranslate.map(async (textNode) => {
-    const orig = textNode.parentElement.getAttribute('data-orig-txt') || textNode.textContent.trim();
-    if (!textNode.parentElement.getAttribute('data-orig-txt')) {
-      textNode.parentElement.setAttribute('data-orig-txt', orig);
-    }
-    if (targetLang === 'en') {
-      textNode.textContent = orig;
-    } else {
-      textNode.textContent = await gtranslate(orig, targetLang);
-    }
-  }));
-}
-
-async function translateAll(lang){
-  currentLang = lang;
+// Chuyển Tab mượt mà giữa các nền tảng
+function switchTab(tabName, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   
-  ['R','MC','App'].forEach(id=>{ const el=document.getElementById('trStatus'+id); if(el){el.classList.add('show');} });
-  
-  try {
-    await translateStaticUI(lang);
-  } catch(e) { console.log("Static UI translate error:", e); }
-
-  translatedRoblox=await Promise.all(robloxData.map(async item=>({
-    ...item,
-    title:await gtranslate(item.title,lang),
-    desc:await gtranslate(item.desc,lang)
-  })));
-
-  translatedMC=await Promise.all(mcScriptData.map(async item=>({
-    ...item,
-    title:await gtranslate(item.title,lang),
-    desc:await gtranslate(item.desc,lang)
-  })));
-
-  translatedApp=await Promise.all(mcAppData.map(async item=>({
-    ...item,
-    name:await gtranslate(item.name,lang),
-    desc:await gtranslate(item.desc,lang)
-  })));
-
-  filterR(); filterMC(); filterApp();
-
-  setTimeout(()=>{
-    ['R','MC','App'].forEach(id=>{ const el=document.getElementById('trStatus'+id); if(el){el.classList.remove('show');} });
-  },600);
-}
-
-function updateStats(){
-  const rh=robloxData.filter(i=>i.isHot).length;
-  if(document.getElementById('statsR')) document.getElementById('statsR').innerHTML=`<div class="stat-pill"><div class="stat-led led-o"></div>Total <b>${robloxData.length}</b></div><div class="stat-pill">🔥 Hot <b>${rh}</b></div>`;
-  const mh=mcScriptData.filter(i=>i.isHot).length;
-  if(document.getElementById('statsMC')) document.getElementById('statsMC').innerHTML=`<div class="stat-pill"><div class="stat-led led-g"></div>Total <b>${mcScriptData.length}</b></div><div class="stat-pill">🔥 Hot <b>${mh}</b></div>`;
-  if(document.getElementById('statsApp')) document.getElementById('statsApp').innerHTML=`<div class="stat-pill"><div class="stat-led led-b"></div>Apps <b>${mcAppData.length}</b></div>`;
-}
-
-/* FILTERS MAPPING */
-function filterR(){
-  const q=(document.getElementById('searchR')?.value||'').toLowerCase();
-  const arr=translatedRoblox.filter(i=>(i.title?.toLowerCase().includes(q)||i.desc?.toLowerCase().includes(q))&&(!hotR||i.isHot));
-  renderScripts('containerR',arr,'ROBLOX');
-}
-function filterMC(){
-  const q=(document.getElementById('searchMC')?.value||'').toLowerCase();
-  const arr=translatedMC.filter(i=>(i.title?.toLowerCase().includes(q)||i.desc?.toLowerCase().includes(q))&&(!hotMC||i.isHot));
-  renderScripts('containerMC',arr,'MINECRAFT');
-}
-function filterApp(){
-  const q=(document.getElementById('searchApp')?.value||'').toLowerCase();
-  const arr=translatedApp.filter(i=>i.name?.toLowerCase().includes(q)||i.desc?.toLowerCase().includes(q));
-  renderApps(arr);
-}
-function toggleHotR(){hotR=!hotR;document.getElementById('hotBtnR').classList.toggle('active',hotR);filterR();}
-function toggleHotMC(){hotMC=!hotMC;document.getElementById('hotBtnMC').classList.toggle('active',hotMC);filterMC();}
-function triggerHot(e){e.preventDefault();closeMob();hotR=true;if(document.getElementById('hotBtnR'))document.getElementById('hotBtnR').classList.add('active');filterR();}
-function resetFilters(e){
-  e.preventDefault();closeMob();hotR=false;hotMC=false;
-  document.getElementById('hotBtnR')?.classList.remove('active');
-  document.getElementById('hotBtnMC')?.classList.remove('active');
-  if(document.getElementById('searchR'))document.getElementById('searchR').value='';
-  if(document.getElementById('searchMC'))document.getElementById('searchMC').value='';
-  if(document.getElementById('searchApp'))document.getElementById('searchApp').value='';
-  filterR();filterMC();filterApp();
-}
-
-/* RENDERING MODULES */
-function renderScripts(cid,arr,label){
-  const c=document.getElementById(cid); c.innerHTML='';
-  if(!arr.length){c.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>No scripts found.</p></div>`;return;}
-  arr.forEach((item,i)=>{
-    const el=document.createElement('div'); el.className='scard'; el.style.animationDelay=(i*0.06)+'s';
-    const hasImg=item.img&&item.img.trim();
-    el.innerHTML=`
-    <div class="scard-inner">
-      ${hasImg
-        ?`<div class="scard-img-col">
-            <img src="${item.img}" class="scard-img" alt="${item.title}" onerror="this.parentElement.innerHTML='<div class=\\"no-img-col\\">🎮</div>'">
-            <div class="scard-img-overlay"></div>
-          </div>`
-        :`<div class="scard-img-col no-img-col">${label==='ROBLOX'?'🎮':'⛏️'}</div>`}
-      <div class="scard-body">
-        <div>
-          <div class="scard-badges">
-            <span class="sbadge sbadge-main">${label}</span>
-            ${item.isHot?'<span class="sbadge sbadge-hot">🔥 HOT</span>':''}
-          </div>
-          <div class="scard-title" style="margin-top:8px;">${item.title}</div>
-          <div class="scard-desc" style="margin-top:6px;">${item.desc}</div>
-        </div>
-        <button class="copy-btn" onclick="copyScript(this,\`${btoa(encodeURIComponent(item.code||''))}\`)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy Script
-        </button>
-      </div>
-    </div>`;
-    c.appendChild(el);
-  });
-  if(window.refreshCursorSelectors) window.refreshCursorSelectors();
-}
-
-function renderApps(arr){
-  const c=document.getElementById('containerApp'); c.innerHTML='';
-  if(!arr.length){c.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📦</div><p>No apps found.</p></div>`;return;}
-  arr.forEach((item,i)=>{
-    const el=document.createElement('div'); el.className='acard'; el.style.animationDelay=(i*0.07)+'s';
-    const hasImg=item.img&&item.img.trim();
-    el.innerHTML=`
-    ${hasImg
-      ?`<div class="acard-banner-wrap">
-          <img src="${item.img}" class="acard-banner" alt="${item.name}" onerror="this.parentElement.className='acard-no-img';this.parentElement.innerHTML='📦';">
-          <div class="acard-banner-overlay"></div>
-        </div>`
-      :`<div class="acard-no-img">📦</div>`}
-    <div class="acard-body">
-      ${item.version?`<span class="acard-ver">v${item.version}</span>`:''}
-      <div class="acard-title">${item.name}</div>
-      <p class="acard-desc">${item.desc}</p>
-      <a href="${item.link||'#'}" target="_blank" rel="noopener" class="dl-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download
-      </a>
-    </div>`;
-    c.appendChild(el);
-  });
-  if(window.refreshCursorSelectors) window.refreshCursorSelectors();
-}
-
-function copyScript(btn,b64){
-  const code=decodeURIComponent(atob(b64));
-  navigator.clipboard.writeText(code).then(()=>{
-    btn.classList.add('copied');
-    btn.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
-    setTimeout(()=>{
-      btn.classList.remove('copied');
-      btn.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Script`;
-    },2000);
-  }).catch(err=>alert('Copy error: '+err));
-}
-
-/* ADMIN INTERFACE LOGINS */
-function openLoginModal(){
-  if(isAdmin){isAdmin=false;document.getElementById('adminControls').style.display='none';document.getElementById('loginBtn').innerText='🔑 Admin';closeModal();return;}
-  modal(`<h2>ADMIN ACCESS</h2><p>Enter credentials to manage content.</p>
-    <div class="adm-fg"><label>EMAIL</label><input type="email" id="liE" placeholder="admin@example.com"></div>
-    <div class="adm-fg"><label>PASSWORD</label><input type="password" id="liP" placeholder="••••••••"></div>
-    <button class="fsb fsb-blue" onclick="doLogin()">🔐 LOGIN</button>
-    <button class="fsb fsb-gray" onclick="closeModal()">CANCEL</button>`);
-}
-function doLogin(){
-  if(document.getElementById('liE').value.trim()==='nkhang00012@gmail.com'&&document.getElementById('liP').value==='Admin'){
-    isAdmin=true; document.getElementById('adminControls').style.display='flex';
-    document.getElementById('loginBtn').innerText='🚪 Logout'; closeModal();
-  }else{alert('❌ Wrong credentials!');}
-}
-
-/* POST MODULES */
-function openPostModal(){
-  modal(`<h2>PUBLISH CONTENT</h2><p>Choose content type and fill in details.</p>
-    <div class="adm-fg"><label>TYPE</label>
-      <select id="pType" onchange="updatePostForm()">
-        <option value="roblox">🎮 Roblox Script</option>
-        <option value="mc-script">⛏️ Minecraft Script</option>
-        <option value="mc-app">📦 Minecraft App</option>
-      </select></div>
-    <div id="dynForm"></div>
-    <button class="fsb fsb-green" id="submitPost" onclick="doPost()">🚀 PUBLISH TO CLOUD</button>
-    <button class="fsb fsb-gray" onclick="closeModal()">CANCEL</button>`);
-  updatePostForm();
-}
-function updatePostForm(){
-  const t=document.getElementById('pType').value;
-  if(t==='mc-app') {
-    document.getElementById('dynForm').innerHTML=`
-      <div class="adm-fg"><label>APP NAME</label><input type="text" id="pName" placeholder="e.g. Lunar Client Premium"></div>
-      <div class="adm-fg"><label>VERSION</label><input type="text" id="pVer" placeholder="e.g. 1.20.4"></div>
-      <div class="adm-fg"><label>UPLOAD IMAGE FILE</label><input type="file" id="pFile" accept="image/*"></div>
-      <div class="form-sep">─── OR ───</div>
-      <div class="adm-fg"><label>IMAGE URL</label><input type="text" id="pImgUrl" placeholder="https://..."></div>
-      <div class="adm-fg"><label>DOWNLOAD LINK</label><input type="text" id="pLink" placeholder="https://..."></div>
-      <div class="adm-fg"><label>DESCRIPTION</label><textarea id="pDesc" rows="3" placeholder="App description..."></textarea></div>`;
-  } else {
-    document.getElementById('dynForm').innerHTML=`
-      <div class="adm-fg"><label>SCRIPT TITLE</label><input type="text" id="pTitle" placeholder="e.g. BONBON HUB V2"></div>
-      <div class="adm-fg" style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
-        <input type="checkbox" id="pHot" style="width:18px;height:18px;accent-color:var(--orange);">
-        <label for="pHot" style="margin:0;color:#ff6b6b;font-weight:700;font-size:15px;">Mark as HOT 🔥</label>
-      </div>
-      <div class="adm-fg"><label>UPLOAD IMAGE FILE</label><input type="file" id="pFile" accept="image/*"></div>
-      <div class="form-sep">─── OR ───</div>
-      <div class="adm-fg"><label>IMAGE URL</label><input type="text" id="pImgUrl" placeholder="https://..."></div>
-      <div class="adm-fg"><label>DESCRIPTION</label><textarea id="pDesc" rows="3" placeholder="Feature description..."></textarea></div>
-      <div class="adm-fg"><label>SCRIPT CODE (LUA)</label><textarea id="pCode" rows="4" style="font-family:'JetBrains Mono',monospace;color:#ff9966;" placeholder="loadstring(...)()"></textarea></div>`;
-  }
-  if(window.refreshCursorSelectors) window.refreshCursorSelectors();
-}
-
-async function doPost(){
-  const t=document.getElementById('pType').value;
-  const desc=(document.getElementById('pDesc')?.value||'').trim();
-  const btn=document.getElementById('submitPost');
-  btn.innerText='🔄 UPLOADING...'; btn.disabled=true;
-
-  const getImg=()=>new Promise(res=>{
-    const file=document.getElementById('pFile')?.files?.[0];
-    const urlVal=(document.getElementById('pImgUrl')?.value||'').trim();
-    if(file){ const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(file); }
-    else res(urlVal||'');
-  });
-
-  const img=await getImg();
-
-  let url, obj;
-  if(t==='mc-app'){
-    const name=(document.getElementById('pName')?.value||'').trim();
-    const version=(document.getElementById('pVer')?.value||'').trim();
-    const link=(document.getElementById('pLink')?.value||'').trim();
-    if(!name||!desc){alert('Fill required fields!'); btn.innerText='🚀 PUBLISH TO CLOUD'; btn.disabled=false; return;}
-    url=FB_MCAPP; obj={name,version,img,link,desc};
-  }else{
-    const title=(document.getElementById('pTitle')?.value||'').trim();
-    const code=(document.getElementById('pCode')?.value||'').trim();
-    const isHot=document.getElementById('pHot')?.checked||false;
-    if(!title||!desc||!code){alert('Fill required fields!'); btn.innerText='🚀 PUBLISH TO CLOUD'; btn.disabled=false; return;}
-    url=t==='roblox'?FB_ROBLOX:FB_MCSCRIPT;
-    obj={title,img,desc,code,isHot};
-  }
-  const ok=await fbPost(url,obj);
-  if(ok){closeModal(); await loadAll(); alert('✅ Published successfully!');}
-  else{alert('❌ Failed.'); btn.innerText='🚀 PUBLISH TO CLOUD'; btn.disabled=false;}
-}
-
-/* DELETE MANAGEMENT */
-function openDeleteModal(){
-  const opts=[
-    ...robloxData.map(i=>`<option value="roblox:${i.cloudId}">[ROBLOX] ${i.title}</option>`),
-    ...mcScriptData.map(i=>`<option value="mc-script:${i.cloudId}">[MC SCRIPT] ${i.title}</option>`),
-    ...mcAppData.map(i=>`<option value="mc-app:${i.cloudId}">[MC APP] ${i.name}</option>`)
-  ].join('');
-  modal(`<h2 style="color:#ff6b6b">DELETE CONTENT</h2><p>Permanently remove data from cloud.</p>
-    <div class="adm-fg"><label>SELECT ITEM</label><select id="delSel">${opts||'<option value="">(Empty)</option>'}</select></div>
-    <button class="fsb fsb-red" id="delBtn" onclick="doDelete()">🗑️ DELETE FROM CLOUD</button>
-    <button class="fsb fsb-gray" onclick="closeModal()">CANCEL</button>`);
-  if(window.refreshCursorSelectors) window.refreshCursorSelectors();
-}
-async function doDelete(){
-  const val=document.getElementById('delSel').value; if(!val)return;
-  if(!confirm('Permanently delete this item?'))return;
-  const[t,id]=val.split(':');
-  const btn=document.getElementById('delBtn'); btn.innerText='🗑️ DELETING...'; btn.disabled=true;
-  const urlMap={roblox:FB_ROBLOX,'mc-script':FB_MCSCRIPT,'mc-app':FB_MCAPP};
-  const segMap={roblox:'scripts','mc-script':'mc_scripts','mc-app':'mc_apps'};
-  const delUrl=urlMap[t].replace(segMap[t]+'.json',segMap[t]+'/'+id+'.json');
-  const ok=await fbDelete(delUrl);
-  if(ok){closeModal(); await loadAll(); alert('✅ Deleted!');}
-  else{alert('❌ Delete error.');}
-}
-
-/* ═══════════════════════════════════════════
-   SEARCHABLE MODAL ARCHITECTURE FOR 50+ LANGS
-═══════════════════════════════════════════ */
-function showLangModal(){
-  let modalHtml = `
-    <h2>LANGUAGE MATRIX</h2>
-    <p>Select your global interface layer. Supported 54 languages across Asia, Europe and Americas.</p>
-    <div class="lang-search-box">
-      <svg class="lang-search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" id="langSearchInput" oninput="filterLanguages()" placeholder="Search country or language...">
-    </div>
-    <div class="lang-grid-scroll" id="langGridContainer">
-  `;
-  
-  ALL_LANGUAGES.forEach(l => {
-    modalHtml += `<button class="lang-btn" data-lang-name="${l.name.toLowerCase()}" onclick="setLang('${l.code}')">${l.name}</button>`;
-  });
-  
-  modalHtml += `</div><button class="fsb fsb-gray" style="margin-top: 15px;" onclick="closeModal()">CLOSE</button>`;
-  modal(modalHtml);
-}
-
-function filterLanguages() {
-  const query = document.getElementById('langSearchInput').value.toLowerCase();
-  const buttons = document.querySelectorAll('#langGridContainer .lang-btn');
-  buttons.forEach(btn => {
-    const name = btn.getAttribute('data-lang-name');
-    if(name.includes(query)) {
-      btn.style.display = 'flex';
-    } else {
-      btn.style.display = 'none';
-    }
-  });
-}
-
-async function setLang(lang){ closeModal(); await translateAll(lang); }
-
-function switchTab(tab,btn){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('panel-'+tab).classList.add('active');
+  const targetPanel = document.getElementById(`panel-${tabName}`);
+  if(targetPanel) targetPanel.classList.add('active');
+}
+
+// Hàm render thẻ Script/App ra giao diện chính
+function renderAll() {
+  // Render Tab Roblox
+  const containerR = document.getElementById('containerR');
+  if(containerR) {
+    containerR.innerHTML = mockRoblox.map(item => `
+      <div class="scard">
+        <div class="scard-inner">
+          <div class="scard-img-col no-img-col">🎮</div>
+          <div class="scard-body">
+            <div class="scard-badges">
+              <span class="sbadge sbadge-main">Roblox</span>
+              ${item.hot ? '<span class="sbadge sbadge-hot">🔥 HOT</span>' : ''}
+            </div>
+            <h3 class="scard-title">${item.title}</h3>
+            <p class="scard-desc">${item.desc}</p>
+            <button class="copy-btn" onclick="executeCopy(this, \`${btoa(item.code)}\`)">📋 Copy Script</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Render Tab Minecraft Script
+  const containerMC = document.getElementById('containerMC');
+  if(containerMC) {
+    containerMC.innerHTML = mockMinecraft.map(item => `
+      <div class="scard">
+        <div class="scard-inner">
+          <div class="scard-img-col no-img-col">⛏️</div>
+          <div class="scard-body">
+            <div class="scard-badges">
+              <span class="sbadge sbadge-main">Minecraft</span>
+              ${item.hot ? '<span class="sbadge sbadge-hot">🔥 HOT</span>' : ''}
+            </div>
+            <h3 class="scard-title">${item.title}</h3>
+            <p class="scard-desc">${item.desc}</p>
+            <button class="copy-btn" onclick="executeCopy(this, \`${btoa(item.code)}\`)">📋 Copy Script</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Render Tab Minecraft App
+  const containerApp = document.getElementById('containerApp');
+  if(containerApp) {
+    containerApp.innerHTML = mockApps.map(item => `
+      <div class="acard">
+        <div class="acard-no-img">📦</div>
+        <div class="acard-body">
+          <span class="acard-ver">${item.version}</span>
+          <h3 class="acard-title">${item.title}</h3>
+          <p class="acard-desc">${item.desc}</p>
+          <a href="${item.link}" class="dl-btn">⚡ Download Now</a>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+// 👑 HỆ THỐNG SAO CHÉP HOÀN HẢO KHÔNG LỖI (Hỗ trợ PC + Mobile tuyệt đối)
+function executeCopy(button, encodedText) {
+  const plainText = atob(encodedText); // Giải mã ngược chuỗi an toàn
+
+  // Thử nghiệm Cách 1: Sử dụng bộ Clipboard API mới nhất
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(plainText).then(() => {
+      triggerSuccess(button);
+    }).catch(() => {
+      fallbackCopyMechanism(button, plainText);
+    });
+  } else {
+    // Cách 2: Sử dụng bộ chứa ẩn đối với giao thức HTTP cũ hoặc trình duyệt di động hạn chế
+    fallbackCopyMechanism(button, plainText);
+  }
+}
+
+function fallbackCopyMechanism(button, text) {
+  const shadowArea = document.createElement("textarea");
+  shadowArea.value = text;
+  
+  // Thiết lập CSS để vùng chứa ẩn này hoàn toàn vô hình, tránh làm giật màn hình
+  shadowArea.style.position = "fixed";
+  shadowArea.style.top = "0";
+  shadowArea.style.left = "0";
+  shadowArea.style.width = "1px";
+  shadowArea.style.height = "1px";
+  shadowArea.style.padding = "0";
+  shadowArea.style.border = "none";
+  shadowArea.style.outline = "none";
+  shadowArea.style.background = "transparent";
+  
+  document.body.appendChild(shadowArea);
+  shadowArea.focus();
+  shadowArea.select();
+  shadowArea.setSelectionRange(0, 99999); // Kích hoạt vùng chọn dành riêng cho thiết bị iOS
+
+  try {
+    const success = document.execCommand('copy');
+    if (success) {
+      triggerSuccess(button);
+    } else {
+      alert("Thiết bị không hỗ trợ sao chép tự động!");
+    }
+  } catch (err) {
+    alert("Vui lòng thử sao chép thủ công!");
+  }
+  document.body.removeChild(shadowArea);
+}
+
+function triggerSuccess(btn) {
+  const baseContent = btn.innerHTML;
+  btn.classList.add('copied');
+  btn.innerHTML = '✅ Copied!';
+  setTimeout(() => {
+    btn.classList.remove('copied');
+    btn.innerHTML = baseContent;
+  }, 2000);
+}
+
+// Đóng mở menu trên Mobile linh hoạt
+function toggleMob() {
+  document.getElementById('navLinks').classList.toggle('mob-open');
+}
+function closeMob() {
+  document.getElementById('navLinks').classList.remove('mob-open');
+}
+function resetFilters(e) {
+  if(e) e.preventDefault();
   closeMob();
 }
 
-function modal(html){document.getElementById('modalContent').innerHTML=html; document.getElementById('globalModal').classList.add('active');}
-function closeModal(){document.getElementById('globalModal').classList.remove('active');}
-document.getElementById('globalModal').addEventListener('click',e=>{if(e.target.id==='globalModal')closeModal();});
+// Logic điều khiển hiệu ứng con trỏ chuột Custom trên PC
+function initCursor() {
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  if(!cursor || !ring) return;
 
-function toggleMob(){document.getElementById('navLinks').classList.toggle('mob-open');}
-function closeMob(){document.getElementById('navLinks').classList.remove('mob-open');}
+  // Nếu là thiết bị cảm ứng di động, tắt hoàn toàn tránh lỗi đơ chuột
+  if (window.matchMedia("(max-width: 768px)").matches) return;
 
-window.onload=function(){
-  showLangModal();
-  loadAll();
-};
+  window.addEventListener('mousemove', (e) => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    
+    ring.style.left = e.clientX + 'px';
+    ring.style.top = e.clientY + 'px';
+  });
+
+  document.addEventListener('mousedown', () => {
+    cursor.classList.add('click');
+    ring.classList.add('click');
+  });
+  document.addEventListener('mouseup', () => {
+    cursor.classList.remove('click');
+    ring.classList.remove('click');
+  });
+}
+
+// Khai báo tượng trưng cho các sự kiện chưa phát triển để tránh lỗi Console hệ thống
+function triggerHot(e) { e.preventDefault(); closeMob(); }
+function openLoginModal() { alert("Admin Panel sáp nhập hệ thống!"); }
+function showLangModal() { alert("Tính năng ngôn ngữ đang cập nhật!"); }
+function filterR() {} function filterMC() {} function filterApp() {} function toggleHotR() {} function toggleHotMC() {}
 </script>
 </body>
 </html>
