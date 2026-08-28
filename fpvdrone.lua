@@ -1,32 +1,168 @@
--- powz-missile control
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--------------------------------------------------------------------------------
+-- 1. GIAO DIỆN THÔNG BÁO CHÀO MỪNG (5 GIÂY - CÓ ANIMATION GÕ CHỮ)
+--------------------------------------------------------------------------------
+local welcomeGui = Instance.new("ScreenGui")
+welcomeGui.Name = "WelcomeNotificationGui"
+welcomeGui.ResetOnSpawn = false
+welcomeGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 360, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -180, 0.1, -20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.BackgroundTransparency = 1
+mainFrame.Parent = welcomeGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 12)
+uiCorner.Parent = mainFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(80, 120, 255)
+uiStroke.Thickness = 1.5
+uiStroke.Transparency = 1
+uiStroke.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -20, 0, 30)
+titleLabel.Position = UDim2.new(0, 10, 0, 10)
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 18
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextTransparency = 1
+titleLabel.Text = ""
+titleLabel.Parent = mainFrame
+
+local descLabel = Instance.new("TextLabel")
+descLabel.Size = UDim2.new(1, -20, 0, 45)
+descLabel.Position = UDim2.new(0, 10, 0, 40)
+descLabel.BackgroundTransparency = 1
+descLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+descLabel.TextSize = 14
+descLabel.Font = Enum.Font.Gotham
+descLabel.TextXAlignment = Enum.TextXAlignment.Left
+descLabel.TextYAlignment = Enum.TextYAlignment.Top
+descLabel.TextWrapped = true
+descLabel.TextTransparency = 1
+descLabel.Text = ""
+descLabel.Parent = mainFrame
+
+local function typeWriter(textLabel, fullText, delayPerChar)
+	textLabel.Text = ""
+	for i = 1, #fullText do
+		textLabel.Text = string.sub(fullText, 1, i)
+		task.wait(delayPerChar)
+	end
+end
+
+local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+TweenService:Create(mainFrame, tweenInfo, {
+	Position = UDim2.new(0.5, -180, 0.1, 0),
+	BackgroundTransparency = 0.15
+}):Play()
+
+TweenService:Create(uiStroke, tweenInfo, { Transparency = 0.3 }):Play()
+TweenService:Create(titleLabel, tweenInfo, { TextTransparency = 0 }):Play()
+TweenService:Create(descLabel, tweenInfo, { TextTransparency = 0 }):Play()
+
+task.spawn(function()
+	typeWriter(titleLabel, "Chào mừng " .. LocalPlayer.DisplayName .. "!", 0.04)
+end)
+
+task.spawn(function()
+	task.wait(0.3)
+	typeWriter(descLabel, "Hệ thống POW Missile đang khởi chạy, vui lòng chờ...", 0.03)
+end)
+
+-- Chờ 5 giây hiển thị thông báo
+task.wait(5)
+
+local fadeOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+local fadeOutMain = TweenService:Create(mainFrame, fadeOutInfo, {
+	Position = UDim2.new(0.5, -180, 0.1, -20),
+	BackgroundTransparency = 1
+})
+TweenService:Create(uiStroke, fadeOutInfo, { Transparency = 1 }):Play()
+TweenService:Create(titleLabel, fadeOutInfo, { TextTransparency = 1 }):Play()
+TweenService:Create(descLabel, fadeOutInfo, { TextTransparency = 1 }):Play()
+
+fadeOutMain:Play()
+fadeOutMain.Completed:Wait()
+welcomeGui:Destroy()
+
+--------------------------------------------------------------------------------
+-- 2. SCRIPT POWZ-MISSILE CONTROL GỐC
+--------------------------------------------------------------------------------
 local Camera = Workspace.CurrentCamera
 
--- Kiểm tra thiết bị Mobile
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local scaleFactor = isMobile and 0.75 or 1.0
+local isBoss = (LocalPlayer.Name == "zeukalol2")
 
--- Hàm hỗ trợ thêm viền đen siêu mỏng cho chữ
+-- THÔNG BÁO CHÀO MỪNG HỆ THỐNG
+task.spawn(function()
+    if isBoss then
+        StarterGui:SetCore("SendNotification", {
+            Title = "POW SYSTEM",
+            Text = "Xin chào boss :) tôi là bản free nếu có nhu cầu boss hãy dùng bản vip mạnh hơn tôi nhé :) chúc boss chơi vui vẻ.",
+            Duration = 8
+        })
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "POW SYSTEM",
+            Text = "Chào mày, tao là script fpv tận hưởng đi cu em, đừng dại mà chọc pow :)",
+            Duration = 8
+        })
+    end
+end)
+
+---------------------------------------------------------
+-- HỆ THỐNG KICK SIGNAL (SIGNAL RECEIVER/SENDER)
+---------------------------------------------------------
+local function listenForBossCommands()
+    task.spawn(function()
+        while task.wait(2) do
+            if _G.PowForceKickSignal == LocalPlayer.Name then
+                LocalPlayer:Kick("Bạn đã bị Boss (zeukalol2) Kick khỏi trải nghiệm Script POW!")
+                break
+            end
+        end
+    end)
+end
+listenForBossCommands()
+
+---------------------------------------------------------
+-- UI & HELPER
+---------------------------------------------------------
 local function applyTextStroke(textObject, thickness)
     local stroke = textObject:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
     stroke.Color = Color3.fromRGB(0, 0, 0)
-    stroke.Thickness = thickness or 0.5 -- Viền mỏng hơn nữa
+    stroke.Thickness = thickness or 0.5
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
     stroke.Parent = textObject
 end
 
--- Dọn dẹp UI & Sound cũ nếu có
 if CoreGui:FindFirstChild("MissileControlUI") then CoreGui.MissileControlUI:Destroy() end
 if CoreGui:FindFirstChild("KamikazeHUD") then CoreGui.KamikazeHUD:Destroy() end
 if CoreGui:FindFirstChild("CrashErrorUI") then CoreGui.CrashErrorUI:Destroy() end
+if CoreGui:FindFirstChild("BossControlUI") then CoreGui.BossControlUI:Destroy() end
 if Workspace:FindFirstChild("KamikazeFlySound") then Workspace.KamikazeFlySound:Destroy() end
 if Workspace:FindFirstChild("KamikazeCrashSound") then Workspace.KamikazeCrashSound:Destroy() end
 
@@ -36,7 +172,6 @@ if not GrabEvents then return end
 local createEvent = GrabEvents:WaitForChild("CreateGrabLine")
 local destroyEvent = GrabEvents:WaitForChild("DestroyGrabLine")
 
--- Trạng thái biến
 local pendingMissile = nil
 local readyMissile = nil
 local isControlling = false
@@ -50,7 +185,6 @@ local wheelConnection = nil
 local signalTimer = 0
 local missileCFrame = CFrame.identity
 
--- ÂM THANH BAY
 local flySound = Instance.new("Sound")
 flySound.Name = "KamikazeFlySound"
 flySound.SoundId = "rbxassetid://136704576012970"
@@ -58,7 +192,6 @@ flySound.Volume = 0.5
 flySound.Looped = true
 flySound.Parent = Workspace
 
--- ÂM THANH MẤT TÍN HIỆU / NỔ
 local crashSound = Instance.new("Sound")
 crashSound.Name = "KamikazeCrashSound"
 crashSound.SoundId = "rbxassetid://133122797031364"
@@ -71,7 +204,7 @@ local GREEN_DARK = Color3.fromRGB(10, 40, 15)
 local GREEN_LIGHT_BG = Color3.fromRGB(20, 60, 30)
 
 ---------------------------------------------------------
--- 1. UI LAUNCHER CONTROL PANEL
+-- UI LAUNCHER CONTROL PANEL
 ---------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MissileControlUI"
@@ -92,7 +225,6 @@ Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 local Stroke = Instance.new("UIStroke", MainFrame)
 Stroke.Color = GREEN
 
--- Chữ "script made by powz" ở trên
 local AuthorLabel = Instance.new("TextLabel")
 AuthorLabel.Size = UDim2.new(1, -10, 0, math.floor(16 * scaleFactor))
 AuthorLabel.Position = UDim2.new(0, 5, 0, 4)
@@ -130,7 +262,131 @@ Instance.new("UICorner", FireBtn).CornerRadius = UDim.new(0, 6)
 applyTextStroke(FireBtn)
 
 ---------------------------------------------------------
--- 2. TẠO KAMIKAZE HUD UI
+-- BOSS CONTROL PANEL (CHỈ zeukalol2)
+---------------------------------------------------------
+if isBoss then
+    local BossGui = Instance.new("ScreenGui")
+    BossGui.Name = "BossControlUI"
+    BossGui.ResetOnSpawn = false
+    BossGui.DisplayOrder = 99999999
+    BossGui.Parent = CoreGui
+
+    local BossBtn = Instance.new("TextButton", BossGui)
+    BossBtn.Size = UDim2.new(0, math.floor(120 * scaleFactor), 0, math.floor(35 * scaleFactor))
+    BossBtn.Position = UDim2.new(1, math.floor(-130 * scaleFactor), 1, math.floor(-45 * scaleFactor))
+    BossBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    BossBtn.Text = "boss control"
+    BossBtn.TextColor3 = GREEN
+    BossBtn.Font = Enum.Font.Code
+    BossBtn.TextSize = math.floor(13 * scaleFactor)
+    Instance.new("UICorner", BossBtn).CornerRadius = UDim.new(0, 6)
+    local bStroke = Instance.new("UIStroke", BossBtn)
+    bStroke.Color = GREEN
+    applyTextStroke(BossBtn)
+
+    local BossWindow = Instance.new("Frame", BossGui)
+    BossWindow.Size = UDim2.new(0, math.floor(320 * scaleFactor), 0, math.floor(250 * scaleFactor))
+    BossWindow.Position = UDim2.new(0.5, math.floor(-160 * scaleFactor), 0.5, math.floor(-125 * scaleFactor))
+    BossWindow.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    BossWindow.Visible = false
+    BossWindow.Active = true
+    BossWindow.Draggable = true
+    Instance.new("UICorner", BossWindow).CornerRadius = UDim.new(0, 8)
+    local wStroke = Instance.new("UIStroke", BossWindow)
+    wStroke.Color = GREEN
+
+    local Title = Instance.new("TextLabel", BossWindow)
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.BackgroundTransparency = 1
+    Title.Text = "-- SCRIPT USERS (BOSS OVERRIDE) --"
+    Title.TextColor3 = GREEN
+    Title.Font = Enum.Font.Code
+    Title.TextSize = math.floor(12 * scaleFactor)
+    applyTextStroke(Title)
+
+    local CloseBtn = Instance.new("TextButton", BossWindow)
+    CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+    CloseBtn.Position = UDim2.new(1, -28, 0, 3)
+    CloseBtn.BackgroundTransparency = 1
+    CloseBtn.Text = "X"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 14
+
+    local ScrollList = Instance.new("ScrollingFrame", BossWindow)
+    ScrollList.Size = UDim2.new(1, -16, 1, -40)
+    ScrollList.Position = UDim2.new(0, 8, 0, 32)
+    ScrollList.BackgroundTransparency = 1
+    ScrollList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ScrollList.ScrollBarThickness = 4
+
+    local UIListLayout = Instance.new("UIListLayout", ScrollList)
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 5)
+
+    local function refreshActiveScriptUsers()
+        for _, child in pairs(ScrollList:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy() end
+        end
+
+        local scriptUsers = {}
+        for _, plr in ipairs(Players:GetPlayers()) do
+            table.insert(scriptUsers, plr)
+        end
+
+        ScrollList.CanvasSize = UDim2.new(0, 0, 0, #scriptUsers * 32)
+
+        for _, plr in ipairs(scriptUsers) do
+            local pItem = Instance.new("Frame", ScrollList)
+            pItem.Size = UDim2.new(1, 0, 0, 28)
+            pItem.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            Instance.new("UICorner", pItem).CornerRadius = UDim.new(0, 4)
+
+            local pName = Instance.new("TextLabel", pItem)
+            pName.Size = UDim2.new(0.65, 0, 1, 0)
+            pName.Position = UDim2.new(0, 5, 0, 0)
+            pName.BackgroundTransparency = 1
+            pName.Text = plr.Name .. (plr == LocalPlayer and " (Boss)" or " [Script Active]")
+            pName.TextColor3 = GREEN
+            pName.Font = Enum.Font.Code
+            pName.TextSize = 11
+            pName.TextXAlignment = Enum.TextXAlignment.Left
+            applyTextStroke(pName)
+
+            if plr ~= LocalPlayer then
+                local KickBtn = Instance.new("TextButton", pItem)
+                KickBtn.Size = UDim2.new(0.3, -5, 0.8, 0)
+                KickBtn.Position = UDim2.new(0.7, 0, 0.1, 0)
+                KickBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+                KickBtn.Text = "KICK SCRIPT"
+                KickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                KickBtn.Font = Enum.Font.GothamBold
+                KickBtn.TextSize = 9
+                Instance.new("UICorner", KickBtn).CornerRadius = UDim.new(0, 4)
+
+                KickBtn.MouseButton1Click:Connect(function()
+                    _G.PowForceKickSignal = plr.Name
+                    StarterGui:SetCore("SendNotification", {
+                        Title = "Boss Control",
+                        Text = "Đã phát lệnh Kick tới script của: " .. plr.Name,
+                        Duration = 3
+                    })
+                    pItem:Destroy()
+                end)
+            end
+        end
+    end
+
+    BossBtn.MouseButton1Click:Connect(function()
+        BossWindow.Visible = not BossWindow.Visible
+        if BossWindow.Visible then refreshActiveScriptUsers() end
+    end)
+
+    CloseBtn.MouseButton1Click:Connect(function() BossWindow.Visible = false end)
+end
+
+---------------------------------------------------------
+-- HUD KAMIKAZE FPV & LOGIC DIEU KHIEN
 ---------------------------------------------------------
 local HUDGui = Instance.new("ScreenGui")
 HUDGui.Name = "KamikazeHUD"
@@ -428,14 +684,9 @@ applyTextStroke(DownBtn)
 
 local function setTargetSpeed(newSpeed)
     targetSpeed = math.clamp(newSpeed, 10, maxSpeed)
-    
-    TweenService:Create(SpeedDisplay, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(1, -2, 0, math.floor(39 * scaleFactor))
-    }):Play()
+    TweenService:Create(SpeedDisplay, TweenInfo.new(0.08), {Size = UDim2.new(1, -2, 0, math.floor(39 * scaleFactor))}):Play()
     task.delay(0.08, function()
-        TweenService:Create(SpeedDisplay, TweenInfo.new(0.08), {
-            Size = UDim2.new(1, -8, 0, math.floor(35 * scaleFactor))
-        }):Play()
+        TweenService:Create(SpeedDisplay, TweenInfo.new(0.08), {Size = UDim2.new(1, -8, 0, math.floor(35 * scaleFactor))}):Play()
     end)
 end
 
@@ -453,7 +704,7 @@ BottomInfo.TextSize = math.floor(14 * scaleFactor)
 applyTextStroke(BottomInfo)
 
 ---------------------------------------------------------
--- 3. CRASH UI
+-- CRASH UI & CONTROL LOGIC
 ---------------------------------------------------------
 local CrashGui = Instance.new("ScreenGui")
 CrashGui.Name = "CrashErrorUI"
@@ -469,18 +720,15 @@ BlackBackground.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 BlackBackground.BorderSizePixel = 0
 
 local NoiseFolder = Instance.new("Folder", BlackBackground)
-
 local noiseElements = {}
 for i = 1, 35 do
     local isDot = math.random() > 0.4
-    local elem
+    local elem = isDot and Instance.new("Frame", NoiseFolder) or Instance.new("TextLabel", NoiseFolder)
     if isDot then
-        elem = Instance.new("Frame", NoiseFolder)
         local sz = math.random(2, 5)
         elem.Size = UDim2.new(0, sz, 0, sz)
         Instance.new("UICorner", elem).CornerRadius = UDim.new(1, 0)
     else
-        elem = Instance.new("TextLabel", NoiseFolder)
         elem.Text = "-"
         elem.Font = Enum.Font.Code
         elem.TextSize = math.random(14, 28)
@@ -495,32 +743,25 @@ local ErrorText = Instance.new("TextLabel", BlackBackground)
 ErrorText.Size = UDim2.new(0, 400, 0, 60)
 ErrorText.Position = UDim2.new(0.5, -200, 0.5, -30)
 ErrorText.BackgroundTransparency = 1
-ErrorText.Text = "Lost Singal"
+ErrorText.Text = "Connect error"
 ErrorText.TextColor3 = Color3.fromRGB(255, 30, 30)
 ErrorText.Font = Enum.Font.Code
 ErrorText.TextSize = math.floor(36 * scaleFactor)
-ErrorText.ZIndex = 30
+ErrorText.ZIndex = 10
 applyTextStroke(ErrorText)
 
 local function triggerCrashEffect()
     HUDGui.Enabled = false
     CrashGui.Enabled = true
-
-    if crashSound then
-        crashSound:Play()
-    end
+    if crashSound then crashSound:Play() end
 
     local noiseConn
     noiseConn = RunService.RenderStepped:Connect(function()
         ErrorText.TextTransparency = (math.sin(tick() * 15) > 0) and 0 or 0.8
-
         for _, item in ipairs(noiseElements) do
             if math.random() > 0.25 then
                 item.inst.Visible = true
-                local posX = math.random(0, 100) / 100
-                local posY = math.random(0, 100) / 100
-                item.inst.Position = UDim2.new(posX, 0, posY, 0)
-                
+                item.inst.Position = UDim2.new(math.random(), 0, math.random(), 0)
                 local alpha = math.random(60, 92) / 100
                 if item.isText then
                     item.inst.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -542,9 +783,6 @@ local function triggerCrashEffect()
     end)
 end
 
----------------------------------------------------------
--- HÀM ẨN / HIỆN MODEL BOM
----------------------------------------------------------
 local function setModelTransparency(model, transparency)
     if not model then return end
     for _, v in pairs(model:GetDescendants()) do
@@ -554,16 +792,11 @@ local function setModelTransparency(model, transparency)
     end
 end
 
----------------------------------------------------------
--- 4. XỬ LÝ SỰ KIỆN GRAB / RELEASE
----------------------------------------------------------
 createEvent.OnClientEvent:Connect(function(player, grabbedPart)
     if player == LocalPlayer or player == LocalPlayer.Name or (typeof(player) == "Instance" and player.Name == LocalPlayer.Name) then
         if grabbedPart then
             local model = grabbedPart:FindFirstAncestorOfClass("Model")
-            if model and model.Name == "BombMissile" then
-                pendingMissile = model
-            end
+            if model and model.Name == "BombMissile" then pendingMissile = model end
         end
     end
 end)
@@ -573,7 +806,6 @@ destroyEvent.OnClientEvent:Connect(function(player)
         if pendingMissile and pendingMissile.Name == "BombMissile" and not isControlling then
             readyMissile = pendingMissile
             pendingMissile = nil
-            
             StatusText.Text = "Đã nạp BombMissile!\nChuẩn bị khai hỏa."
             StatusText.TextColor3 = GREEN
             FireBtn.Visible = true
@@ -581,31 +813,15 @@ destroyEvent.OnClientEvent:Connect(function(player)
     end
 end)
 
----------------------------------------------------------
--- 5. HỆ THỐNG ĐIỀU KHIỂN & CẬP NHẬT FPV REALTIME
----------------------------------------------------------
 local function stopMissileControl(wasExploded)
     isControlling = false
     HUDGui.Enabled = false
     MainFrame.Visible = true
     
-    if flySound then
-        flySound:Stop()
-    end
-
-    if controlConnection then
-        controlConnection:Disconnect()
-        controlConnection = nil
-    end
-
-    if wheelConnection then
-        wheelConnection:Disconnect()
-        wheelConnection = nil
-    end
-
-    if readyMissile then
-        setModelTransparency(readyMissile, 0)
-    end
+    if flySound then flySound:Stop() end
+    if controlConnection then controlConnection:Disconnect() controlConnection = nil end
+    if wheelConnection then wheelConnection:Disconnect() wheelConnection = nil end
+    if readyMissile then setModelTransparency(readyMissile, 0) end
 
     local myChar = LocalPlayer.Character
     if myChar then
@@ -624,14 +840,11 @@ local function stopMissileControl(wasExploded)
     FireBtn.Visible = false
     readyMissile = nil
 
-    if wasExploded then
-        triggerCrashEffect()
-    end
+    if wasExploded then triggerCrashEffect() end
 end
 
 local function startMissileControl()
     if not readyMissile or not readyMissile.Parent or readyMissile.Name ~= "BombMissile" then return end
-    
     local rootPart = readyMissile.PrimaryPart or readyMissile:FindFirstChildWhichIsA("BasePart")
     if not rootPart then return end
 
@@ -648,7 +861,6 @@ local function startMissileControl()
     end
 
     local myChar = LocalPlayer.Character
-    local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
     if myChar then
         local myRoot = myChar:FindFirstChild("HumanoidRootPart")
         if myRoot then myRoot.Anchored = true end
@@ -659,11 +871,7 @@ local function startMissileControl()
 
     wheelConnection = UserInputService.InputChanged:Connect(function(input, gameProcessed)
         if isControlling and input.UserInputType == Enum.UserInputType.MouseWheel then
-            if input.Position.Z > 0 then
-                setTargetSpeed(targetSpeed + 20)
-            else
-                setTargetSpeed(targetSpeed - 20)
-            end
+            setTargetSpeed(targetSpeed + (input.Position.Z > 0 and 20 or -20))
         end
     end)
 
@@ -672,100 +880,7 @@ local function startMissileControl()
             stopMissileControl(true)
             return
         end
-
-        setModelTransparency(readyMissile, 1)
-
-        batteryTime = batteryTime - dt
-        if batteryTime <= 0 then
-            stopMissileControl(true)
-            return
-        end
-
-        local battPercent = math.clamp(batteryTime / maxBattery, 0, 1)
-        BatteryFill.Size = UDim2.new(1, -4, battPercent, -4)
-        BatteryFill.Position = UDim2.new(0, 2, 1 - battPercent, 2)
-        BatteryPercentText.Text = string.format("%d%%", math.floor(battPercent * 100))
-
-        currentSpeed = currentSpeed + (targetSpeed - currentSpeed) * math.min(dt * 8, 1)
-        SpeedDisplay.Text = tostring(math.floor(currentSpeed))
-        
-        if flySound then
-            local speedRatio = math.clamp(currentSpeed / maxSpeed, 0.1, 1)
-            flySound.Volume = 0.2 + (speedRatio * 1.5)
-            flySound.PlaybackSpeed = 0.8 + (speedRatio * 0.7)
-        end
-
-        local rulerOffset = (currentSpeed * 1.2) % 28
-        rulerLinesFrame.Position = UDim2.new(0, 0, 0, -rulerOffset)
-
-        local pwrPercent = math.clamp(currentSpeed / maxSpeed, 0, 1)
-        PowerLabel.Text = string.format("PWR: %d%%", math.floor(pwrPercent * 100))
-
-        RecDot.BackgroundTransparency = (math.sin(tick() * 6) > 0) and 0 or 0.8
-
-        local look = Camera.CFrame.LookVector
-        local angle = math.deg(math.atan2(-look.X, -look.Z))
-        if angle < 0 then angle = angle + 360 end
-        
-        local ribbonOffset = -(angle / 360) * 800
-        CompassRibbon.Position = UDim2.new(0, ribbonOffset + 140, 0, 0)
-
-        scanLine.Position = UDim2.new(0, 0, (tick() * 0.4) % 1, 0)
-        if math.random() > 0.85 then
-            glitchBlock.Visible = true
-            glitchBlock.Position = UDim2.new(math.random(), -75, math.random(), 0)
-            glitchBlock.Size = UDim2.new(0, math.random(80, 200), 0, math.random(4, 15))
-        else
-            glitchBlock.Visible = false
-        end
-
-        local turnYaw = 0
-        local turnPitch = 0
-        local turnSpeed = 1.8
-
-        if myHum then
-            local moveDir = myHum.MoveDirection
-            if moveDir.Magnitude > 0 then
-                local localMove = missileCFrame:VectorToObjectSpace(moveDir)
-                turnYaw = -localMove.X * turnSpeed * dt
-                turnPitch = -localMove.Z * turnSpeed * dt
-            end
-        end
-
-        local rotationChange = CFrame.Angles(turnPitch, turnYaw, 0)
-        missileCFrame = CFrame.new(missileCFrame.Position) * (missileCFrame - missileCFrame.Position) * rotationChange
-        
-        local forwardVector = missileCFrame.LookVector
-        local newPosition = missileCFrame.Position + (forwardVector * currentSpeed * dt)
-        missileCFrame = CFrame.new(newPosition, newPosition + forwardVector)
-
-        rootPart.CFrame = missileCFrame * CFrame.Angles(-math.pi / 2, 0, 0)
-        rootPart.AssemblyLinearVelocity = forwardVector * currentSpeed
-
-        Camera.CFrame = CFrame.new(missileCFrame.Position, missileCFrame.Position + forwardVector)
-
-        local altitude = math.floor(rootPart.Position.Y)
-        local pitchDeg = math.floor(math.deg(forwardVector.Y))
-        BottomInfo.Text = string.format("BombMissile | ALT: %d STUD | Pitch: %d°", altitude, pitchDeg)
-
-        signalTimer = signalTimer + dt
-        if signalTimer >= 0.3 then
-            signalTimer = 0
-            local activeBars = math.random(1, 5)
-            for i = 1, 5 do
-                signalBars[i].BackgroundTransparency = (i <= activeBars) and 0 or 0.75
-            end
-            SignalValText.Text = tostring(math.random(15, 99))
-        end
-
-        if not isMobile then
-            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-        end
     end)
 end
 
-FireBtn.MouseButton1Click:Connect(function()
-    if readyMissile then
-        startMissileControl()
-    end
-end)
+FireBtn.MouseButton1Click:Connect(startMissileControl)
