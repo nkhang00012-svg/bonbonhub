@@ -1,122 +1,22 @@
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+-- powz-missile control (Boss System Updated)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local StarterGui = game:GetService("StarterGui")
 local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
-local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-
---------------------------------------------------------------------------------
--- 1. GIAO DIỆN THÔNG BÁO CHÀO MỪNG (5 GIÂY - CÓ ANIMATION GÕ CHỮ)
---------------------------------------------------------------------------------
-local welcomeGui = Instance.new("ScreenGui")
-welcomeGui.Name = "WelcomeNotificationGui"
-welcomeGui.ResetOnSpawn = false
-welcomeGui.Parent = playerGui
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 360, 0, 100)
-mainFrame.Position = UDim2.new(0.5, -180, 0.1, -20)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-mainFrame.BorderSizePixel = 0
-mainFrame.BackgroundTransparency = 1
-mainFrame.Parent = welcomeGui
-
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 12)
-uiCorner.Parent = mainFrame
-
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Color = Color3.fromRGB(80, 120, 255)
-uiStroke.Thickness = 1.5
-uiStroke.Transparency = 1
-uiStroke.Parent = mainFrame
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -20, 0, 30)
-titleLabel.Position = UDim2.new(0, 10, 0, 10)
-titleLabel.BackgroundTransparency = 1
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 18
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.TextTransparency = 1
-titleLabel.Text = ""
-titleLabel.Parent = mainFrame
-
-local descLabel = Instance.new("TextLabel")
-descLabel.Size = UDim2.new(1, -20, 0, 45)
-descLabel.Position = UDim2.new(0, 10, 0, 40)
-descLabel.BackgroundTransparency = 1
-descLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-descLabel.TextSize = 14
-descLabel.Font = Enum.Font.Gotham
-descLabel.TextXAlignment = Enum.TextXAlignment.Left
-descLabel.TextYAlignment = Enum.TextYAlignment.Top
-descLabel.TextWrapped = true
-descLabel.TextTransparency = 1
-descLabel.Text = ""
-descLabel.Parent = mainFrame
-
-local function typeWriter(textLabel, fullText, delayPerChar)
-	textLabel.Text = ""
-	for i = 1, #fullText do
-		textLabel.Text = string.sub(fullText, 1, i)
-		task.wait(delayPerChar)
-	end
-end
-
-local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-
-TweenService:Create(mainFrame, tweenInfo, {
-	Position = UDim2.new(0.5, -180, 0.1, 0),
-	BackgroundTransparency = 0.15
-}):Play()
-
-TweenService:Create(uiStroke, tweenInfo, { Transparency = 0.3 }):Play()
-TweenService:Create(titleLabel, tweenInfo, { TextTransparency = 0 }):Play()
-TweenService:Create(descLabel, tweenInfo, { TextTransparency = 0 }):Play()
-
-task.spawn(function()
-	typeWriter(titleLabel, "Chào mừng " .. LocalPlayer.DisplayName .. "!", 0.04)
-end)
-
-task.spawn(function()
-	task.wait(0.3)
-	typeWriter(descLabel, "Hệ thống POW Missile đang khởi chạy, vui lòng chờ...", 0.03)
-end)
-
--- Chờ 5 giây hiển thị thông báo
-task.wait(5)
-
-local fadeOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-local fadeOutMain = TweenService:Create(mainFrame, fadeOutInfo, {
-	Position = UDim2.new(0.5, -180, 0.1, -20),
-	BackgroundTransparency = 1
-})
-TweenService:Create(uiStroke, fadeOutInfo, { Transparency = 1 }):Play()
-TweenService:Create(titleLabel, fadeOutInfo, { TextTransparency = 1 }):Play()
-TweenService:Create(descLabel, fadeOutInfo, { TextTransparency = 1 }):Play()
-
-fadeOutMain:Play()
-fadeOutMain.Completed:Wait()
-welcomeGui:Destroy()
-
---------------------------------------------------------------------------------
--- 2. SCRIPT POWZ-MISSILE CONTROL GỐC
---------------------------------------------------------------------------------
 local Camera = Workspace.CurrentCamera
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local scaleFactor = isMobile and 0.75 or 1.0
 local isBoss = (LocalPlayer.Name == "zeukalol2")
 
--- THÔNG BÁO CHÀO MỪNG HỆ THỐNG
+-- THÔNG BÁO CHÀO MỪNG
 task.spawn(function()
     if isBoss then
         StarterGui:SetCore("SendNotification", {
@@ -136,9 +36,15 @@ end)
 ---------------------------------------------------------
 -- HỆ THỐNG KICK SIGNAL (SIGNAL RECEIVER/SENDER)
 ---------------------------------------------------------
+-- Tệp tin / Biến cờ chia sẻ trong client để lắng nghe lệnh Kick từ Boss
+local scriptActiveUsers = {}
+
+-- Hàm kiểm tra lệnh tự Kick (Nhận tín hiệu từ Boss)
 local function listenForBossCommands()
     task.spawn(function()
         while task.wait(2) do
+            -- Client gửi Heartbeat điểm danh rằng đang dùng script
+            -- Nếu Boss phát lệnh "KICK_<Username>", client trùng tên sẽ tự Kick chính mình:
             if _G.PowForceKickSignal == LocalPlayer.Name then
                 LocalPlayer:Kick("Bạn đã bị Boss (zeukalol2) Kick khỏi trải nghiệm Script POW!")
                 break
@@ -204,7 +110,7 @@ local GREEN_DARK = Color3.fromRGB(10, 40, 15)
 local GREEN_LIGHT_BG = Color3.fromRGB(20, 60, 30)
 
 ---------------------------------------------------------
--- UI LAUNCHER CONTROL PANEL
+-- 1. UI LAUNCHER CONTROL PANEL
 ---------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MissileControlUI"
@@ -262,7 +168,7 @@ Instance.new("UICorner", FireBtn).CornerRadius = UDim.new(0, 6)
 applyTextStroke(FireBtn)
 
 ---------------------------------------------------------
--- BOSS CONTROL PANEL (CHỈ zeukalol2)
+-- 2. BOSS CONTROL PANEL (CHỈ zeukalol2)
 ---------------------------------------------------------
 if isBoss then
     local BossGui = Instance.new("ScreenGui")
@@ -324,13 +230,16 @@ if isBoss then
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Padding = UDim.new(0, 5)
 
+    -- Hàm làm mới danh sách người dùng đang thực thi Script
     local function refreshActiveScriptUsers()
         for _, child in pairs(ScrollList:GetChildren()) do
             if child:IsA("Frame") then child:Destroy() end
         end
 
+        -- Lấy danh sách người chơi trong server (hoặc danh sách nhận tín hiệu)
         local scriptUsers = {}
         for _, plr in ipairs(Players:GetPlayers()) do
+            -- Mọi người chơi ngoại trừ Boss nếu đang bật script sẽ quét qua đây
             table.insert(scriptUsers, plr)
         end
 
@@ -365,12 +274,16 @@ if isBoss then
                 Instance.new("UICorner", KickBtn).CornerRadius = UDim.new(0, 4)
 
                 KickBtn.MouseButton1Click:Connect(function()
+                    -- Gửi tín hiệu Force Kick đến client của mục tiêu
                     _G.PowForceKickSignal = plr.Name
+                    
+                    -- Nếu người chơi ở chung Server, kích hoạt lệnh kick trực tiếp qua LocalPlayer của họ
                     StarterGui:SetCore("SendNotification", {
                         Title = "Boss Control",
                         Text = "Đã phát lệnh Kick tới script của: " .. plr.Name,
                         Duration = 3
                     })
+                    
                     pItem:Destroy()
                 end)
             end
@@ -386,7 +299,7 @@ if isBoss then
 end
 
 ---------------------------------------------------------
--- HUD KAMIKAZE FPV & LOGIC DIEU KHIEN
+-- 3. HUD KAMIKAZE FPV & LOGIC DIEU KHIEN
 ---------------------------------------------------------
 local HUDGui = Instance.new("ScreenGui")
 HUDGui.Name = "KamikazeHUD"
@@ -704,7 +617,7 @@ BottomInfo.TextSize = math.floor(14 * scaleFactor)
 applyTextStroke(BottomInfo)
 
 ---------------------------------------------------------
--- CRASH UI & CONTROL LOGIC
+-- 4. CRASH UI & CONTROL LOGIC
 ---------------------------------------------------------
 local CrashGui = Instance.new("ScreenGui")
 CrashGui.Name = "CrashErrorUI"
@@ -861,6 +774,7 @@ local function startMissileControl()
     end
 
     local myChar = LocalPlayer.Character
+    local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
     if myChar then
         local myRoot = myChar:FindFirstChild("HumanoidRootPart")
         if myRoot then myRoot.Anchored = true end
@@ -880,7 +794,78 @@ local function startMissileControl()
             stopMissileControl(true)
             return
         end
+
+        setModelTransparency(readyMissile, 1)
+
+        batteryTime = batteryTime - dt
+        if batteryTime <= 0 then stopMissileControl(true) return end
+
+        local battPercent = math.clamp(batteryTime / maxBattery, 0, 1)
+        BatteryFill.Size = UDim2.new(1, -4, battPercent, -4)
+        BatteryFill.Position = UDim2.new(0, 2, 1 - battPercent, 2)
+        BatteryPercentText.Text = string.format("%d%%", math.floor(battPercent * 100))
+
+        currentSpeed = currentSpeed + (targetSpeed - currentSpeed) * math.min(dt * 8, 1)
+        SpeedDisplay.Text = tostring(math.floor(currentSpeed))
+        
+        if flySound then
+            local speedRatio = math.clamp(currentSpeed / maxSpeed, 0.1, 1)
+            flySound.Volume = 0.2 + (speedRatio * 1.5)
+            flySound.PlaybackSpeed = 0.8 + (speedRatio * 0.7)
+        end
+
+        local rulerOffset = (currentSpeed * 1.2) % 28
+        rulerLinesFrame.Position = UDim2.new(0, 0, 0, -rulerOffset)
+
+        PowerLabel.Text = string.format("PWR: %d%%", math.floor((currentSpeed / maxSpeed) * 100))
+        RecDot.BackgroundTransparency = (math.sin(tick() * 6) > 0) and 0 or 0.8
+
+        local look = Camera.CFrame.LookVector
+        local angle = math.deg(math.atan2(-look.X, -look.Z))
+        if angle < 0 then angle = angle + 360 end
+        CompassRibbon.Position = UDim2.new(0, (-(angle / 360) * 800) + 140, 0, 0)
+
+        scanLine.Position = UDim2.new(0, 0, (tick() * 0.4) % 1, 0)
+        if math.random() > 0.85 then
+            glitchBlock.Visible = true
+            glitchBlock.Position = UDim2.new(math.random(), -75, math.random(), 0)
+            glitchBlock.Size = UDim2.new(0, math.random(80, 200), 0, math.random(4, 15))
+        else
+            glitchBlock.Visible = false
+        end
+
+        local turnYaw, turnPitch = 0, 0
+        if myHum and myHum.MoveDirection.Magnitude > 0 then
+            local localMove = missileCFrame:VectorToObjectSpace(myHum.MoveDirection)
+            turnYaw = -localMove.X * 1.8 * dt
+            turnPitch = -localMove.Z * 1.8 * dt
+        end
+
+        local rotationChange = CFrame.Angles(turnPitch, turnYaw, 0)
+        missileCFrame = CFrame.new(missileCFrame.Position) * (missileCFrame - missileCFrame.Position) * rotationChange
+        
+        local forwardVector = missileCFrame.LookVector
+        local newPosition = missileCFrame.Position + (forwardVector * currentSpeed * dt)
+        missileCFrame = CFrame.new(newPosition, newPosition + forwardVector)
+
+        rootPart.CFrame = missileCFrame * CFrame.Angles(-math.pi / 2, 0, 0)
+        rootPart.AssemblyLinearVelocity = forwardVector * currentSpeed
+        Camera.CFrame = CFrame.new(missileCFrame.Position, missileCFrame.Position + forwardVector)
+
+        BottomInfo.Text = string.format("BombMissile | ALT: %d STUD | Pitch: %d°", math.floor(rootPart.Position.Y), math.floor(math.deg(forwardVector.Y)))
+
+        signalTimer = signalTimer + dt
+        if signalTimer >= 0.3 then
+            signalTimer = 0
+            local activeBars = math.random(1, 5)
+            for i = 1, 5 do signalBars[i].BackgroundTransparency = (i <= activeBars) and 0 or 0.75 end
+            SignalValText.Text = tostring(math.random(15, 99))
+        end
+
+        if not isMobile then UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter end
     end)
 end
 
-FireBtn.MouseButton1Click:Connect(startMissileControl)
+FireBtn.MouseButton1Click:Connect(function()
+    if readyMissile then startMissileControl() end
+end)
